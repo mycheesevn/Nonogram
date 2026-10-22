@@ -6,10 +6,40 @@ import { PageViewTracker } from "@/components/PageViewTracker";
 
 const GA_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 
+const SITE_URL = "https://nonogram.synerworlds.com";
+const TITLE = "Nonogram — trò chơi tranh logic (Picross)";
+const DESCRIPTION =
+  "Chơi Nonogram (Picross) miễn phí: 3 kích thước bàn, 3 mức khó, 3 puzzle mới mỗi ngày, gợi ý theo suy luận, đua Nonogram 2–4 người trong phòng chơi. Tiếng Việt & English.";
+
 export const metadata: Metadata = {
-  title: "Nonogram — trò chơi tranh logic (Picross)",
-  description:
-    "Chơi Nonogram (Picross) miễn phí: 3 kích thước bàn, 3 mức khó, 3 puzzle mới mỗi ngày, gợi ý theo suy luận, đua Nonogram 2–4 người trong phòng chơi. Tiếng Việt & English.",
+  metadataBase: new URL(SITE_URL),
+  title: TITLE,
+  description: DESCRIPTION,
+  alternates: {
+    canonical: SITE_URL,
+  },
+  openGraph: {
+    title: TITLE,
+    description: DESCRIPTION,
+    url: SITE_URL,
+    siteName: "Nonogram",
+    type: "website",
+    locale: "vi_VN",
+    images: [
+      {
+        url: `${SITE_URL}/opengraph-image`,
+        width: 1200,
+        height: 630,
+        alt: TITLE,
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: TITLE,
+    description: DESCRIPTION,
+    images: [`${SITE_URL}/opengraph-image`],
+  },
   icons: {
     icon: [{ url: "/icon.svg", type: "image/svg+xml" }],
   },
