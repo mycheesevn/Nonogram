@@ -1,0 +1,2295 @@
+/* ============================================================================
+  Cờ Cá Ngựa — UI shell, ported from the PacClone shell spec
+  (boardgame-engagement skill, assets/pacclone-shell.css).
+  Prefix .xq- -> .sud-, --board-aspect 1/1 (square board), then
+  game-specific rules appended. Cascade rule: mobile overrides live in
+  media blocks AFTER the base rules they override.
+  ============================================================================ */
+
+/* ---------- design tokens + base + page frame + header + buttons ---------- */
+:root {
+  --bg: #f7f1e5;
+  --panel: #fffaf0;
+  --panel-2: #efe3c6;
+  --ink: #4a3823;
+  --muted: #8a7557;
+  --accent: #db2777;
+  --accent-2: #b45309;
+  --danger: #e03131;
+  --deep: #5d4a2f;
+  --p0: #b45309;
+  --p1: #4a6fa5;
+  --border: #d9c9a3;
+  --board-aspect: 1 / 1;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto,
+    "Noto Sans", sans-serif;
+  background: radial-gradient(1200px 800px at 50% -10%, #fdf9ee 0%, var(--bg) 60%);
+  color: var(--ink);
+  min-height: 100dvh;
+}
+
+/* ---------- page frame ---------- */
+.sud-page {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 10px 16px 12px;
+  padding-top: max(10px, calc(env(safe-area-inset-top) + 20px));
+  padding-bottom: max(12px, env(safe-area-inset-bottom));
+  gap: 8px;
+  overflow: hidden;
+}
+.sud-footer {
+  text-align: center;
+  font-size: 0.72rem;
+  color: var(--muted, #888);
+  padding: 4px 0 2px;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.sud-header {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.sud-topbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sud-menu-btn {
+  background: var(--panel-2);
+  color: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  width: 38px;
+  height: 38px;
+  font-size: 1.15rem;
+  line-height: 1;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.sud-brand {
+  display: flex;
+  align-items: baseline;
+  min-width: 0;
+}
+
+.sud-title {
+  margin: 0;
+  font-size: 1.15rem;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sud-account {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.sud-quick {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sud-quick .sud-btn {
+  padding: 6px 10px;
+  font-size: 0.8rem;
+}
+
+.sud-quick-spacer {
+  flex: 1;
+}
+
+.sud-field {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  font-size: 0.7rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.sud-select {
+  background: var(--panel-2);
+  color: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 0.9rem;
+  max-width: 230px;
+}
+
+.sud-btn {
+  background: var(--panel-2);
+  color: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.sud-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.sud-btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 600;
+}
+
+.sud-btn-danger {
+  border-color: var(--danger);
+  color: #ff8787;
+}
+
+.sud-btn.small {
+  padding: 4px 10px;
+  font-size: 0.8rem;
+}
+
+.sud-btn-icon {
+  padding: 8px 10px;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.sud-lang {
+  display: flex;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.sud-lang button {
+  background: var(--panel-2);
+  color: var(--muted);
+  border: none;
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sud-lang button.active {
+  background: var(--accent);
+  color: #fff;
+}
+
+/* ---------- main layout: board area / scroll area / aspect-locked fit ---------- */
+.sud-layout {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  gap: 14px;
+}
+
+/* Room match: the board column — board area on top, the actions row
+   (reactions / resign / cancel / back) directly under the board. */
+.sud-board-col {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.sud-board-area {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+}
+
+.sud-scroll-area {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  overflow-y: auto;
+  padding: 4px;
+}
+
+.sud-board-fit {
+  position: relative;
+  height: 100%;
+  aspect-ratio: var(--board-aspect);
+  max-width: 100%;
+}
+
+/* Side panel (status, captured, moves, actions) — game-specific base rule. */
+.sud-panel {
+  width: 330px;
+  flex-shrink: 0;
+  overflow-y: auto;
+  padding: 14px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+}
+/* Room trio (voice + room chat + delete): stacked sections in a
+ * height-locked scrolling flex panel must keep natural height — never
+ * flex:1 / default shrink, or the sections paint over each other
+ * (family lesson). */
+.sud-layout > .sud-panel > * {
+  flex-shrink: 0;
+}
+/* Voice / chat blocks sit as natural-height sections inside the match
+ * aside; the chat feed has its own internal scroll (max-height). */
+.sud-roomvoice-block,
+.sud-roomchat-block {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 8px;
+}
+
+/* ---------- header gear button + dropdown menu ---------- */
+.sud-user {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+}
+
+.sud-gear-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  font-size: 1.15rem;
+  cursor: pointer;
+  color: var(--ink);
+  flex-shrink: 0;
+}
+
+.sud-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+}
+
+.sud-account-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 95;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  min-width: 250px;
+  max-width: calc(100vw - 16px);
+  padding: 8px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.4);
+  display: grid;
+  gap: 2px;
+}
+
+.sud-account-menu-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+  margin: 2px 0 6px;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.sud-check-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  color: var(--ink);
+}
+
+.sud-check-toggle input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+}
+
+/* ---------- slide-in drawer ---------- */
+.sud-drawer-root {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+}
+
+.sud-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.sud-drawer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: min(320px, 85vw);
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  animation: drawer-in 0.22s ease;
+  box-shadow: 8px 0 32px rgba(0, 0, 0, 0.5);
+}
+
+@keyframes drawer-in {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.sud-drawer-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border);
+  font-size: 1.05rem;
+}
+
+.sud-drawer-body {
+  padding: 16px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.sud-drawer-body section h2 {
+  margin: 0 0 8px;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+
+.sud-drawer-body .sud-field {
+  margin-bottom: 12px;
+}
+
+.sud-drawer-body .sud-select {
+  width: 100%;
+  max-width: none;
+}
+
+.sud-drawer-modes {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.sud-drawer-modes button {
+  background: var(--panel-2);
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+}
+
+.sud-blog-drawer-link {
+  display: block;
+  text-align: center;
+  padding: 10px;
+  border-radius: 8px;
+  background: rgba(37, 99, 235, 0.12);
+  border: 1px solid rgba(37, 99, 235, 0.45);
+  color: var(--ink);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.sud-drawer-modes button[data-active="true"] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+/* ============================================================================
+  Game-specific: board, pieces, panel internals
+  ============================================================================ */
+
+.sud-board-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.sud-piece {
+  transition: transform 0.28s ease;
+  will-change: transform;
+}
+
+.sud-target-dot {
+  animation: cct-pulse 1.1s ease-in-out infinite;
+}
+
+@keyframes cct-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.sud-threat-ring {
+  animation: cct-threat 0.9s ease-in-out infinite;
+}
+
+@keyframes cct-threat {
+  0%,
+  100% {
+    opacity: 0.9;
+    stroke-width: 7;
+  }
+  50% {
+    opacity: 0.35;
+    stroke-width: 10;
+  }
+}
+
+.sud-capture-flash {
+  animation: cct-flash 0.45s ease-out forwards;
+  pointer-events: none;
+}
+
+@keyframes cct-flash {
+  0% {
+    opacity: 0.95;
+    transform: scale(0.6);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(2.2);
+  }
+}
+
+/* Big centered check banner (opt-in setting, default OFF). */
+.sud-check-banner {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.sud-check-banner span {
+  font-size: clamp(2rem, 9vw, 4.2rem);
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: #fff3d6;
+  text-shadow:
+    0 0 18px rgba(224, 49, 49, 0.9),
+    0 3px 0 #7a1010,
+    0 6px 24px rgba(0, 0, 0, 0.6);
+  animation: cct-banner-in 1.6s ease forwards;
+}
+
+@keyframes cct-banner-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.7);
+  }
+  12% {
+    opacity: 1;
+    transform: scale(1.06);
+  }
+  20% {
+    transform: scale(1);
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.02);
+  }
+}
+
+/* Status line */
+.sud-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1rem;
+  font-weight: 700;
+  min-height: 1.6em;
+}
+
+.sud-status .sud-turn-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  border: 1px solid rgba(0, 0, 0, 0.4);
+}
+
+.sud-status.check {
+  color: #b5452f;
+}
+
+.sud-thinking {
+  color: var(--muted);
+  font-weight: 400;
+  font-size: 0.85rem;
+}
+
+/* Captured rows */
+.sud-captured {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.sud-captured-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 1.4em;
+}
+
+.sud-mini-disc {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  display: inline-block;
+  border: 1px solid rgba(0, 0, 0, 0.45);
+}
+
+/* Move list */
+.sud-moves {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 0;
+}
+
+.sud-moves h3,
+.sud-panel h3 {
+  margin: 0;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+}
+
+.sud-log {
+  overflow-y: auto;
+  max-height: 300px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.88rem;
+  font-variant-numeric: tabular-nums;
+  background: rgba(0, 0, 0, 0.18);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.sud-log-row {
+  display: flex;
+  gap: 8px;
+  padding: 1px 0;
+}
+
+.sud-log-num {
+  color: var(--muted);
+  min-width: 2.2em;
+  text-align: right;
+}
+
+.sud-log-move {
+  flex: 1;
+  white-space: nowrap;
+}
+
+.sud-log-move.capture {
+  color: #b5452f;
+  font-weight: 700;
+}
+
+.sud-log-empty {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+/* Action rows */
+.sud-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.sud-actions .sud-btn {
+  flex: 1;
+  white-space: nowrap;
+}
+
+/* Game-over panel */
+.sud-gameover {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: center;
+}
+
+.sud-gameover .sud-result {
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
+.sud-gameover .sud-reason {
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+/* How-to view */
+.sud-howto {
+  max-width: 720px;
+  width: 100%;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  line-height: 1.65;
+  font-size: 0.95rem;
+}
+
+.sud-howto h2 {
+  margin: 0;
+  font-size: 1.3rem;
+}
+
+.sud-howto h3 {
+  margin: 8px 0 0;
+  font-size: 1rem;
+  color: var(--accent);
+}
+
+.sud-howto p,
+.sud-howto ul {
+  margin: 0;
+}
+
+.sud-howto ul {
+  padding-left: 1.2em;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sud-howto-board {
+  width: min(100%, 420px);
+  margin: 0 auto;
+}
+
+/* Two-player extras */
+.sud-flip-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+/* ---------- mobile (<=920px): overrides AFTER base rules ---------- */
+@media (max-width: 920px) {
+  .sud-page {
+    height: auto;
+    overflow: visible;
+    padding: 8px 10px 10px;
+    padding-top: max(8px, calc(env(safe-area-inset-top) + 20px));
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
+  }
+
+  .sud-quick {
+    flex-wrap: wrap;
+  }
+
+  .sud-title {
+    font-size: 1rem;
+  }
+
+  /* Mobile: the tagline sits beside the title and squeezes it into an
+     ellipsis ("Cờ G…") — the sibling shells show the app name alone. */
+  .sud-brand .sud-muted {
+    display: none;
+  }
+
+  .sud-layout {
+    flex-direction: column;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+
+  .sud-board-area {
+    display: block;
+    padding: 2px;
+  }
+
+  .sud-board-fit {
+    width: 100%;
+    height: auto;
+    max-width: 560px;
+    margin: 0 auto;
+  }
+
+  .sud-panel {
+    width: 100%;
+    max-height: none;
+  }
+
+  .sud-log {
+    max-height: 220px;
+  }
+
+  .sud-quick {
+    flex-wrap: wrap;
+  }
+}
+/* ---------- auth + profile modals ---------- */
+.sud-modal-root {
+  position: fixed; inset: 0; z-index: 90;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.sud-modal {
+  background: var(--panel); color: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: 16px; padding: 22px 26px; max-width: 420px; width: 100%;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+  max-height: calc(100dvh - 40px); overflow-y: auto;
+}
+.sud-modal h2 { margin: 0 0 12px; font-size: 1.1rem; text-align: center; }
+.sud-mode-toggle { display: flex; gap: 8px; margin-bottom: 14px; }
+.sud-mode-toggle .sud-btn { flex: 1; }
+.sud-mode-toggle .sud-btn.active {
+  background: var(--accent); border-color: var(--accent);
+  color: #fff; font-weight: 700;
+}
+.sud-oauth {
+  display: flex; flex-direction: column; gap: 8px; margin-bottom: 4px;
+}
+.sud-oauth-btn {
+  display: flex; align-items: center; justify-content: center; gap: 10px;
+  width: 100%; font-weight: 600;
+}
+.sud-or {
+  display: flex; align-items: center; gap: 10px;
+  color: var(--muted); font-size: 0.8rem; margin: 10px 0;
+}
+.sud-or::before, .sud-or::after {
+  content: ""; flex: 1; height: 1px; background: var(--border);
+}
+.sud-input {
+  background: var(--panel-2); border: 1px solid var(--border); color: var(--ink);
+  border-radius: 8px; padding: 8px 12px; font-size: 14px;
+}
+.sud-input:focus { outline: none; border-color: var(--accent); }
+.sud-error {
+  color: var(--danger); font-size: 0.85rem; margin: 6px 0; text-align: center;
+}
+.sud-ok {
+  color: #69db7c; font-size: 0.85rem; margin: 6px 0; text-align: center;
+}
+.sud-link {
+  background: none; border: none; padding: 0;
+  color: var(--accent); cursor: pointer; font: inherit; text-decoration: underline;
+}
+.sud-buttons { display: flex; gap: 8px; margin-top: 12px; }
+.sud-buttons .sud-btn { flex: 1; }
+.sud-muted { color: var(--muted); }
+
+/* profile modal */
+.sud-profile-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 4px;
+}
+.sud-profile-head h2 { margin: 0; }
+.sud-profile-avatar {
+  width: 84px; height: 84px; border-radius: 50%;
+  background: var(--accent); color: #fff;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 2rem; font-weight: 700; margin: 12px auto 8px;
+  overflow: hidden;
+}
+.sud-profile-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.sud-profile-form {
+  display: flex; flex-direction: column; gap: 10px;
+  margin: 10px 0; text-align: left;
+}
+.sud-profile-msg { text-align: center; font-size: 0.85rem; margin: 6px 0; }
+.sud-profile-section {
+  border-top: 1px solid var(--border);
+  margin-top: 14px; padding-top: 12px;
+}
+.sud-profile-section h3 { margin: 0 0 8px; font-size: 0.95rem; }
+.sud-profile-name { font-size: 1.25rem; font-weight: 700; text-align: center; }
+.sud-profile-email {
+  font-size: 0.85rem; color: var(--muted); text-align: center;
+  margin: 2px 0 12px; word-break: break-all;
+}
+.sud-profile-stats { display: flex; gap: 8px; margin: 12px 0; }
+.sud-profile-stat {
+  flex: 1; background: var(--panel-2); border: 1px solid var(--border);
+  border-radius: 10px; padding: 8px 4px; text-align: center;
+}
+.sud-profile-stat b { display: block; font-size: 1.05rem; }
+.sud-profile-stat span {
+  font-size: 0.68rem; color: var(--muted);
+  text-transform: uppercase; letter-spacing: 0.04em;
+}
+
+/* 📡 Go Live modal */
+.sud-live-modal .sud-field { display: block; margin: 10px 0; text-transform: none; letter-spacing: normal; font-size: 0.9rem; color: var(--ink); }
+.sud-live-modal .sud-field span { display: block; margin-bottom: 4px; }
+.sud-live-modal .sud-input { width: 100%; box-sizing: border-box; }
+.sud-live-note { margin: 8px 0; font-size: 0.92rem; line-height: 1.45; opacity: 0.9; }
+.sud-live-keynote { font-size: 0.8rem; opacity: 0.65; margin-top: 14px; }
+.sud-live-error { margin: 10px 0; font-size: 0.92rem; line-height: 1.45; color: #ff9d8a; }
+.sud-live-check { display: flex; align-items: center; gap: 8px; margin: 10px 0; font-size: 0.9rem; cursor: pointer; }
+.sud-live-check input { width: 16px; height: 16px; accent-color: var(--accent); }
+
+/* 📡 Stream-mode branding (rendered inside the captured tab) */
+.sud-live-dot {
+  width: 11px; height: 11px; border-radius: 50%; background: #ff4747;
+  display: inline-block; flex: none;
+  animation: sud-live-pulse 1.2s ease-in-out infinite;
+}
+@keyframes sud-live-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+.sud-live-bar {
+  position: fixed; top: 0; left: 0; right: 0; height: 54px; z-index: 90;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 0 14px;
+  background: linear-gradient(90deg, #1e40af 0%, #2563eb 55%, #1e40af 100%);
+  color: #fff; box-shadow: 0 2px 14px rgba(0, 0, 0, 0.45);
+}
+.sud-live-bar-brand { display: flex; align-items: baseline; gap: 12px; min-width: 0; }
+.sud-live-bar-domain { font-size: 1.3rem; font-weight: 800; letter-spacing: 0.03em; white-space: nowrap; }
+.sud-live-bar-tagline { font-size: 0.9rem; opacity: 0.85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sud-live-bar-controls { display: flex; align-items: center; gap: 12px; flex: none; }
+.sud-live-bar-onair { display: flex; align-items: center; gap: 7px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.sud-live-stop { background: rgba(255, 255, 255, 0.14); color: #fff; border: 1px solid rgba(255, 255, 255, 0.5); }
+
+.sud-live-card {
+  position: fixed; inset: 0; z-index: 95;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+  background: radial-gradient(120% 120% at 50% 20%, #2563eb 0%, #1e3a8a 60%, #172554 100%);
+  color: #fff; text-align: center; padding: 24px;
+}
+.sud-live-card-pill {
+  display: flex; align-items: center; gap: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.55); border-radius: 999px; padding: 5px 14px;
+  font-weight: 700; letter-spacing: 0.04em; font-size: 0.95rem;
+}
+.sud-live-card-thanks { font-size: clamp(1.3rem, 3.5vw, 2rem); font-weight: 700; }
+.sud-live-card-domain {
+  font-size: clamp(1.7rem, 6vw, 3.4rem); font-weight: 900; letter-spacing: 0.02em; line-height: 1.1;
+  text-shadow: 0 3px 18px rgba(0, 0, 0, 0.45);
+}
+.sud-live-card-tagline { font-size: clamp(1rem, 2.4vw, 1.35rem); opacity: 0.92; }
+.sud-live-card-brand { position: absolute; bottom: 26px; font-size: 0.95rem; letter-spacing: 0.28em; opacity: 0.75; text-transform: uppercase; }
+
+/* ---------- legal pages (data-deletion, privacy) ---------- */
+.sud-legal-page { max-width: 720px; margin: 0 auto; padding: 32px 20px 60px; }
+.sud-legal-page h1 { font-size: 1.5rem; margin: 0 0 4px; }
+.sud-legal-page .updated {
+  color: var(--muted); font-size: 0.85rem; margin-bottom: 16px;
+}
+.sud-legal-page h2 { font-size: 1.1rem; margin: 24px 0 8px; }
+.sud-legal-page p { line-height: 1.6; margin: 8px 0; }
+.sud-legal-page .back {
+  display: inline-block; margin-bottom: 20px; color: var(--accent);
+}
+.sud-legal-sep { border: none; border-top: 1px solid var(--border); margin: 32px 0; }
+
+/* ============================================================================
+   Phase 2A views (history, leaderboard, stats, check-in, setup editor) —
+   ported from the Chess/PacClone standard classes, .sud- prefix.
+   ============================================================================ */
+
+.sud-view {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 24px 16px;
+  width: 100%;
+}
+.sud-view h2 {
+  margin: 0 0 16px;
+}
+.sud-streak {
+  font-size: 18px;
+}
+.sud-msg {
+  color: var(--accent-2);
+  font-weight: 600;
+}
+.sud-hint {
+  color: var(--muted);
+  font-size: 13px;
+}
+.sud-empty-note {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.sud-error {
+  color: #e5484d;
+  font-size: 0.85rem;
+}
+
+/* ---------- replay video export ---------- */
+.sud-modal-actions {
+  display: flex; gap: 10px; justify-content: center; margin-top: 12px;
+  flex-wrap: wrap;
+}
+.sud-seg {
+  display: flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden;
+}
+.sud-seg button {
+  flex: 1; padding: 8px 10px; border: 0; background: var(--panel-2);
+  color: var(--ink); font: inherit; font-size: 0.85rem; font-weight: 600; cursor: pointer;
+}
+.sud-seg button.active { background: var(--accent); color: #fff; }
+.sud-panel-head-col { flex-direction: column; align-items: stretch; }
+.sud-level-select {
+  flex: 1; min-width: 0; padding: 8px 10px; border: 1px solid var(--border);
+  border-radius: 8px; background: var(--panel-2); color: var(--ink);
+  font: inherit; font-size: 0.9rem; font-weight: 600; cursor: pointer;
+}
+.sud-level-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+}
+.sud-level-caption { font-size: 0.85rem; font-weight: 600; color: var(--muted); }
+.sud-progress {
+  height: 10px; border-radius: 999px; background: var(--panel-2);
+  border: 1px solid var(--border); overflow: hidden; margin: 10px 0 4px;
+}
+.sud-progress-fill {
+  height: 100%; background: var(--accent); transition: width 0.2s linear;
+}
+.sud-video-row { display: flex; align-items: center; gap: 12px; margin: 12px 0; }
+.sud-video-label { font-size: 0.85rem; font-weight: 600; }
+.sud-video-row .sud-seg { flex: 1; }
+.sud-video-mic {
+  display: flex; align-items: center; gap: 8px; font-size: 0.9rem;
+  margin: 10px 0; cursor: pointer;
+}
+.sud-video-preview {
+  width: 100%; max-height: 46vh; border-radius: 10px;
+  background: #000; margin: 8px 0 4px;
+}
+
+/* ---------- check-in calendar ---------- */
+.sud-cal {
+  display: flex;
+  gap: 8px;
+  margin: 16px 0;
+  flex-wrap: wrap;
+}
+.sud-cal-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 18px;
+}
+.sud-cal-day small {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* ---------- list views (history rows, leaderboard rows) ---------- */
+.sud-board-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.sud-lb-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 14px;
+}
+
+/* Friends rows: avatar + name + level chip (family-standard row). */
+.sud-friend-id {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.sud-friend-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex: none;
+}
+.sud-friend-avatar-fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--accent, #b5452f);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+.sud-lb-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 14px 6px;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+.sud-lb-rank {
+  font-weight: 700;
+  color: var(--accent);
+  min-width: 36px;
+}
+.sud-lb-name {
+  flex: 1;
+}
+.sud-lb-title {
+  color: var(--muted);
+  font-size: 13px;
+}
+.sud-lb-xp {
+  font-weight: 700;
+}
+.sud-lb-me {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+}
+
+/* My-rank card + PacClone-style rows (leaderboard parity). */
+.sud-lb-me-card {
+  background: var(--panel);
+  border: 1px solid var(--accent);
+  box-shadow: 0 0 0 1px var(--accent);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+}
+.sud-lb-me-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.sud-lb-me-label {
+  font-weight: 700;
+  flex: 1;
+}
+.sud-lb-section {
+  margin: 14px 0 8px;
+}
+.sud-lb-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.sud-lb-sub {
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+.sud-lb-stats-row {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+  font-size: 0.9rem;
+}
+
+/* ---------- leaderboard tabs + site statistics ---------- */
+.sud-lb-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.sud-lb-tabs button {
+  flex: 1;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--panel-2);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.sud-lb-tabs button.active {
+  border-color: var(--accent);
+  background: var(--panel);
+}
+.sud-stat-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.sud-stat-card {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+.sud-stat-card .num {
+  font-size: 1.4rem;
+  font-weight: 700;
+}
+.sud-stat-card .lbl {
+  font-size: 0.82rem;
+  font-weight: 600;
+  margin-top: 2px;
+}
+.sud-stat-card .sub {
+  font-size: 0.75rem;
+  opacity: 0.6;
+  margin-top: 2px;
+}
+.sud-stat-subject {
+  margin-bottom: 8px;
+}
+.sud-chart {
+  display: flex;
+  align-items: stretch;
+  gap: 3px;
+  height: 170px;
+  padding: 10px 2px 0;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel-2);
+}
+.sud-bar-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 0;
+}
+.sud-bar-val {
+  font-size: 0.62rem;
+  height: 14px;
+  line-height: 14px;
+}
+.sud-bar {
+  width: 70%;
+  max-width: 30px;
+  min-height: 2px;
+  background: var(--accent);
+  border-radius: 3px 3px 0 0;
+}
+.sud-bar-label {
+  font-size: 0.6rem;
+  opacity: 0.6;
+  margin-top: 4px;
+  white-space: nowrap;
+}
+
+/* ---------- pagination ---------- */
+.sud-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 12px 0;
+}
+.sud-pagination button {
+  background: var(--panel-2);
+  color: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+.sud-pagination button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* ---------- board setup editor ---------- */
+.sud-setup-title {
+  margin: 0 0 6px;
+  font-size: 1.1rem;
+  color: var(--ink);
+}
+.sud-palette {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.sud-palbtn {
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  color: var(--ink);
+  cursor: pointer;
+}
+.sud-palbtn svg {
+  width: 36px;
+  height: 36px;
+  display: block;
+}
+.sud-palbtn.active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(224, 163, 46, 0.45);
+  background: var(--panel);
+}
+.sud-palbtn-tool {
+  width: auto;
+  min-width: 44px;
+  padding: 6px 10px;
+  gap: 6px;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+.sud-setup-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.sud-setup-form .sud-select {
+  width: 100%;
+  max-width: none;
+}
+.sud-setup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.sud-setup-error {
+  text-align: left;
+  margin-top: 10px;
+}
+
+/* UI parity: identity header/menu elements (ported from the family shell) */
+.sud-rating-chip {
+  background: rgba(255, 212, 59, 0.14);
+  border: 1px solid rgba(255, 212, 59, 0.45);
+  color: var(--ink);
+  border-radius: 999px;
+  padding: 3px 10px;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.sud-rating-chip:hover {
+  background: rgba(255, 212, 59, 0.25);
+}
+.sud-avatar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 4px 8px 4px 4px;
+  color: var(--ink);
+  font: inherit;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.sud-avatar-btn:hover {
+  background: var(--panel-2);
+}
+.sud-level-ring {
+  --p: 0;
+  width: 37px;
+  height: 37px;
+  border-radius: 50%;
+  padding: 2.5px;
+  flex-shrink: 0;
+  display: inline-flex;
+  background: conic-gradient(
+    #ffd43b calc(var(--p) * 1turn),
+    rgba(255, 255, 255, 0.14) 0
+  );
+  transition: background 0.4s ease;
+}
+.sud-level-ring .sud-account-avatar {
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+.sud-account-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+.sud-account-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.sud-account-avatar.large {
+  width: 48px;
+  height: 48px;
+  font-size: 1.6rem;
+}
+.sud-account-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+  max-width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sud-caret {
+  font-size: 0.7rem;
+  opacity: 0.6;
+}
+.sud-account-menu-head {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 8px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 6px;
+}
+.sud-account-menu-id {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.sud-account-menu-id strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sud-account-menu-id .sud-muted {
+  font-size: 0.78rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sud-account-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.92rem;
+  padding: 9px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.sud-account-menu-item:hover {
+  background: var(--panel-2);
+}
+.sud-drawer-legal {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  font-size: 0.78rem;
+  color: var(--muted);
+  padding: 8px 0 2px;
+}
+.sud-drawer-legal a {
+  color: var(--muted);
+  text-decoration: none;
+}
+.sud-drawer-legal a:hover {
+  text-decoration: underline;
+}
+
+/* Legal pages (Terms / Privacy) */
+.sud-legal-page {
+  min-height: 100dvh;
+  padding: 28px 16px 56px;
+  display: flex;
+  justify-content: center;
+}
+.sud-legal {
+  max-width: 760px;
+  width: 100%;
+}
+.sud-legal h1 {
+  font-size: 1.7rem;
+  margin: 20px 0 6px;
+}
+.sud-legal h2 {
+  font-size: 1.05rem;
+  margin: 26px 0 8px;
+  color: var(--accent);
+}
+.sud-legal p {
+  line-height: 1.65;
+  margin: 10px 0;
+}
+.sud-legal-updated {
+  opacity: 0.7;
+  font-size: 0.85rem;
+}
+.sud-legal-foot {
+  margin-top: 28px;
+}
+
+/* (Phase 2A avatar-button styles retired: the identity button now uses the
+   family pill + level-ring styles defined above.) */
+.sud-xp-toast {
+  margin-top: 8px;
+  font-weight: 700;
+  color: var(--accent);
+  font-size: 1.05rem;
+}
+.sud-guest-hint {
+  margin-top: 10px;
+  padding: 10px 12px;
+  background: var(--panel-2);
+  border: 1px solid var(--border, #3a2f22);
+  border-radius: 10px;
+  font-size: 0.85rem;
+}
+.sud-guest-hint p {
+  margin: 0 0 8px;
+  opacity: 0.85;
+}
+
+/* Phase 2B: rooms / social / correspondence */
+.sud-tabs {
+  display: flex;
+  gap: 8px;
+  margin: 12px 0;
+  flex-wrap: wrap;
+}
+.sud-tabs button {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 6px;
+  border-radius: 10px;
+  border: 1px solid var(--border, #3a2f22);
+  background: var(--panel-2);
+  color: inherit;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.sud-tabs button.active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+.sud-textarea {
+  width: 100%;
+  max-width: none;
+  min-height: 64px;
+  resize: vertical;
+  font: inherit;
+}
+.sud-code-input {
+  text-transform: uppercase;
+  letter-spacing: 0.35em;
+  text-align: center;
+  font-weight: 700;
+  max-width: 180px;
+}
+.sud-room-row-btn {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+.sud-live-badge {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #ff6b6b;
+  border: 1px solid #ff6b6b;
+  border-radius: 999px;
+  padding: 1px 7px;
+  margin-right: 4px;
+  white-space: nowrap;
+}
+.sud-room-code-card {
+  text-align: center;
+}
+.sud-room-code-big {
+  font-size: 2.2rem;
+  font-weight: 800;
+  letter-spacing: 0.4em;
+  margin: 4px 0 10px;
+  padding-left: 0.4em;
+}
+.sud-vs-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.sud-vs-side {
+  font-weight: 700;
+  font-size: 0.95rem;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sud-vs-side.red {
+  text-align: left;
+  color: #4a6fa5; /* P1: second player */
+}
+.sud-vs-side.green {
+  text-align: right;
+  color: #b45309; /* P0: first player */
+}
+.sud-vs-mid {
+  font-size: 1.3rem;
+  flex: 0 0 auto;
+}
+.sud-member-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.sud-row-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex: 0 0 auto;
+}
+.sud-comment-form {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.sud-comment-form .sud-input {
+  flex: 1;
+  min-width: 0;
+}
+.sud-comment-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+.sud-comment {
+  background: var(--panel-2);
+  border: 1px solid var(--border, #3a2f22);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 0.88rem;
+}
+.sud-comment-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 2px;
+  font-size: 0.8rem;
+}
+/* Room match: reactions are ephemeral floaters over the board + a pill
+   bar in the actions row under the board (PacClone pattern) — the old
+   toggle/count panel styles are gone. */
+.sud-room-match-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  min-height: 34px;
+}
+.sud-reaction-bar {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--border, #3a2f22);
+  border-radius: 999px;
+  padding: 4px 10px;
+}
+.sud-reaction-btn {
+  background: none;
+  border: none;
+  font-size: 1.35rem;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 8px;
+  line-height: 1;
+}
+.sud-reaction-float {
+  position: absolute;
+  bottom: 12%;
+  font-size: 2rem;
+  pointer-events: none;
+  z-index: 7;
+  animation: cct-reaction-float 2.2s ease-out forwards;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
+}
+@keyframes cct-reaction-float {
+  0% { opacity: 0; transform: translateY(10px) scale(0.6); }
+  15% { opacity: 1; transform: translateY(0) scale(1.2); }
+  30% { transform: translateY(-8px) scale(1); }
+  75% { opacity: 1; }
+  100% { opacity: 0; transform: translateY(-90px) scale(0.9); }
+}
+.sud-tournament {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border, #3a2f22);
+}
+.sud-tournament-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.sud-standings {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+  margin-bottom: 8px;
+}
+.sud-standings th,
+.sud-standings td {
+  padding: 4px 8px;
+  text-align: left;
+  border-bottom: 1px solid var(--border, #3a2f22);
+}
+.sud-standings td:nth-child(2),
+.sud-standings td:nth-child(3),
+.sud-standings th:nth-child(2),
+.sud-standings th:nth-child(3) {
+  text-align: right;
+}
+.sud-pairings {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+  font-size: 0.85rem;
+}
+.sud-pairing {
+  display: flex;
+  justify-content: space-between;
+  padding: 3px 0;
+}
+.sud-invite-card {
+  text-align: center;
+}
+.sud-invite-name {
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin: 6px 0;
+}
+.sud-guest-banner {
+  margin: 10px 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(224, 163, 46, 0.12);
+  border: 1px solid var(--accent);
+  font-size: 0.85rem;
+}
+.sud-guest-teaser {
+  text-align: center;
+  margin: 12px 0;
+  padding: 14px;
+  border-radius: 12px;
+  background: var(--panel-2);
+  border: 1px solid var(--border, #3a2f22);
+}
+.sud-guest-teaser p {
+  margin: 0 0 10px;
+}
+.sud-modal {
+  position: fixed;
+  z-index: 60;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--panel, #221a12);
+  border: 1px solid var(--border, #3a2f22);
+  border-radius: 16px;
+  padding: 20px;
+  width: min(420px, calc(100vw - 40px));
+  text-align: center;
+}
+.sud-modal h2 {
+  margin: 0 0 10px;
+}
+.sud-modal p {
+  margin: 6px 0;
+}
+.sud-toast {
+  position: fixed;
+  z-index: 70;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  background: #5d4a2f;
+  color: #fff;
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  padding: 10px 18px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  white-space: nowrap;
+  max-width: calc(100vw - 40px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Phase 2B: match-view layout fixes */
+.sud-backbar {
+  flex: 0 0 auto;
+  align-self: flex-start;
+}
+
+/* A match view embedded in a scroll view (guest room detail): the
+   height-driven board fit has no definite height to resolve against
+   there, so stack vertically with a width-driven board instead
+   (same pattern as the mobile layout). */
+.sud-view .sud-layout {
+  flex-direction: column;
+}
+.sud-view .sud-layout .sud-board-area {
+  display: block;
+  width: 100%;
+}
+.sud-view .sud-layout .sud-board-fit {
+  width: 100%;
+  height: auto;
+  max-width: 560px;
+  margin: 0 auto;
+}
+.sud-view .sud-layout .sud-panel {
+  width: 100%;
+}
+
+/* Phase 2C: push nudge + lesson/puzzle/community views */
+.sud-push-nudge {
+  position: fixed;
+  z-index: 70;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  background: #5d4a2f;
+  color: #fff;
+  border: 1px solid var(--accent);
+  border-radius: 14px;
+  padding: 14px 16px;
+  width: min(420px, calc(100vw - 32px));
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+}
+.sud-push-nudge-title {
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.sud-push-nudge-text {
+  font-size: 0.9rem;
+  opacity: 0.85;
+  margin-bottom: 10px;
+}
+.sud-push-nudge-row {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.sud-lib-home,
+.sud-lib-chapter {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.sud-lib-card {
+  width: 100%;
+  text-align: left;
+  background: var(--panel-2);
+  border: 1px solid var(--accent);
+  border-radius: 12px;
+  padding: 12px 14px;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+}
+.sud-lib-card:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.sud-lib-card .sud-lib-cicon {
+  font-size: 1.6rem;
+  margin-right: 10px;
+}
+.sud-lib-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sud-lib-progress {
+  font-size: 0.85rem;
+  opacity: 0.75;
+}
+.sud-lib-quiz-prompt {
+  background: var(--panel-2);
+  border: 1px dashed var(--accent);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-weight: 600;
+}
+.sud-lib-feedback {
+  min-height: 1.4em;
+  font-weight: 600;
+}
+.sud-lib-feedback.bad {
+  color: #ff8787;
+}
+.sud-lib-feedback.good {
+  color: #69db7c;
+}
+.sud-puzzle-streak {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.sud-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin: 8px 0;
+}
+.sud-tabs button {
+  background: var(--panel-2);
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  padding: 6px 12px;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.9rem;
+}
+.sud-tabs button[data-active="true"] {
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+}
+.sud-form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+.sud-form-field input,
+.sud-form-field select,
+.sud-form-field textarea {
+  font-size: 16px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--accent);
+  background: var(--panel-2);
+  color: inherit;
+  font: inherit;
+}
+
+/* Phase 2C Part 5: replay viewer */
+.sud-replay-controls {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: center;
+  margin: 10px 0 6px;
+  flex-wrap: wrap;
+}
+.sud-replay-count {
+  font-weight: 700;
+  min-width: 64px;
+  text-align: center;
+}
+.sud-replay-slider {
+  width: 100%;
+  margin: 4px 0 10px;
+  accent-color: var(--accent);
+}
+.sud-replay-moves {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 220px;
+  overflow-y: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.sud-replay-moves li {
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: var(--panel-2);
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+.sud-replay-moves li.active {
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+}
+.sud-replay-ply-num {
+  opacity: 0.6;
+  font-size: 0.8rem;
+}
+
+/* --- Cờ Cá Ngựa additions --- */
+.sud-turn-dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; vertical-align: -1px; }
+.sud-turn-dot.blue { background: #b45309; } /* blue seat = seat 0 = first player */
+.sud-turn-dot.red { background: #4a6fa5; } /* red seat = seat 1 = second player */
+@keyframes cgFlipPulse {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.22); }
+  100% { transform: scale(1); }
+}
+.sud-piece-flip { transform-box: fill-box; transform-origin: center; animation: cgFlipPulse 0.45s ease; }
+
+/* Incoming-challenge banner + toast (Phase 3B) */
+.sud-challenge-banner {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  margin: 10px auto 0; max-width: 1180px; padding: 10px 14px;
+  background: #fdf3d8; border: 1.5px solid #e8a33d; border-radius: 10px;
+  font-weight: 600;
+}
+.sud-challenge-toast {
+  margin: 10px auto 0; max-width: 1180px; padding: 10px 14px;
+  background: #fde8e8; border: 1.5px solid #d66; border-radius: 10px;
+}
+
+/* Inbox badge + avatar dot (Phase 3C) */
+.sud-badge {
+  display: inline-block; margin-left: 8px; min-width: 20px; text-align: center;
+  background: #d33; color: #fff; border-radius: 999px; font-size: 12px;
+  padding: 1px 6px; font-weight: 700;
+}
+.sud-avatar-btn { position: relative; }
+.sud-avatar-dot {
+  position: absolute; top: -2px; right: -2px; width: 11px; height: 11px;
+  background: #d33; border: 2px solid #fff; border-radius: 50%;
+}
+
+/* Bí Kíp lessons (Phase 3C) */
+.sud-lib-chapter { margin: 14px 0; }
+.sud-lib-chapter h4 { margin: 6px 0 2px; }
+.sud-lesson-text { line-height: 1.55; }
+
+/* ---------- legal pages (terms / privacy / data-deletion) ---------- */
+.sud-legal-page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 32px 20px;
+  line-height: 1.65;
+  overflow-y: auto;
+  height: 100dvh;
+}
+.sud-legal-page .back {
+  color: var(--accent);
+  font-weight: 600;
+}
+.sud-legal-page h1 {
+  font-size: 1.4rem;
+  margin: 16px 0 8px;
+}
+.sud-legal-page h2 {
+  font-size: 1.1rem;
+  margin: 20px 0 6px;
+}
+.sud-legal-page .updated {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.sud-legal-sep {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 28px 0;
+}
+
+/* ── Cờ Cá Ngựa game-specific ─────────────────────────────── */
+.sud-dot { display: inline-block; width: 14px; height: 14px; border-radius: 50%; vertical-align: -2px; }
+.sud-config-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin: 8px 0; }
+.sud-config-sep { width: 10px; }
+.sud-chip { border: 1px solid var(--border, #d6c9a8); background: transparent; border-radius: 999px; padding: 4px 10px; cursor: pointer; font: inherit; }
+.sud-chip-on { background: #2563eb; color: #fff; border-color: #2563eb; }
+.sud-dice-row { display: flex; gap: 14px; align-items: center; margin: 10px 0; }
+.sud-dice-side { flex: 1; min-width: 0; }
+.sud-dice { width: 74px; height: 74px; border-radius: 16px; background: #fff; border: 2px solid #1f2937; display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr); padding: 10px; box-shadow: 0 3px 0 #1f2937; flex: none; place-items: center; }
+.sud-dice-rolling { animation: sud-dice-shake .12s linear infinite; }
+@keyframes sud-dice-shake { 0% { transform: rotate(-5deg); } 50% { transform: rotate(5deg) translateY(-3px); } 100% { transform: rotate(-5deg); } }
+.sud-pip { width: 13px; height: 13px; border-radius: 50%; background: #2563eb; }
+.sud-roll-btn { background: #2563eb; color: #fff; border: none; border-radius: 12px; padding: 12px 20px; font-size: 17px; font-weight: 700; cursor: pointer; box-shadow: 0 3px 0 #7f1d1d; }
+.sud-roll-btn:active { transform: translateY(2px); box-shadow: none; }
+.sud-turn-line { display: flex; align-items: center; gap: 8px; font-weight: 600; margin: 4px 0; }
+.sud-note { opacity: .85; margin: 4px 0; }
+.sud-home-pip { display: inline-flex; width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid #9ca3af; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; margin-right: 3px; opacity: .45; }
+.sud-home-pip-on { background: #2563eb; border-color: #2563eb; color: #fff; opacity: 1; }
+.sud-seat-progress { display: flex; flex-direction: column; gap: 4px; margin: 8px 0; }
+.sud-seat-row { display: flex; align-items: center; gap: 8px; padding: 4px 8px; border-radius: 8px; background: transparent; border: 1px solid transparent; font: inherit; text-align: left; }
+.sud-seat-name { font-weight: 600; flex: 1; }
+.sud-seat-count { opacity: .75; font-size: 13px; }
+.sud-ranks { display: flex; flex-direction: column; gap: 6px; margin: 8px 0; }
+.sud-rank-row { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+.sud-rank-home { margin-left: auto; }
+.sud-log { margin-top: 10px; display: flex; flex-direction: column; gap: 2px; max-height: 190px; overflow-y: auto; }
+.sud-log-row { font-size: 13.5px; padding: 3px 6px; border-radius: 6px; background: transparent; border: none; font: inherit; text-align: left; cursor: default; }
+button.sud-log-row { cursor: pointer; }
+.sud-log-on { background: rgba(185, 28, 28, .14); font-weight: 700; }
+.sud-pulse-ring { animation: sud-pulse-ring 1s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
+@keyframes sud-pulse-ring { 0%, 100% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.18); opacity: .55; } }
+.sud-panel-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.sud-panel-btns { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
+.sud-reactions { display: flex; gap: 6px; margin: 10px 0; }
+.sud-reactions button { border: 1px solid var(--border, #d6c9a8); background: transparent; border-radius: 999px; padding: 4px 10px; cursor: pointer; font-size: 16px; }
+.sud-comments { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; }
+.sud-comments form { display: flex; gap: 6px; margin-top: 6px; }
+.sud-comments input { flex: 1; padding: 8px; border-radius: 8px; border: 1px solid var(--border, #d6c9a8); font: inherit; }
+.sud-comment-row { font-size: 14px; }
+.sud-save-row { display: flex; gap: 6px; margin: 10px 0; }
+.sud-save-row input { flex: 1; padding: 8px; border-radius: 8px; border: 1px solid var(--border, #d6c9a8); font: inherit; }
+.sud-saved-row { display: flex; align-items: center; gap: 8px; padding: 5px 0; }
+.sud-saved-row span { flex: 1; }
+.sud-replay-controls { display: flex; align-items: center; gap: 6px; margin: 8px 0; }
+.sud-replay-slider { width: 100%; }
+.sud-lib-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.sud-lib-card { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 16px 10px; border-radius: 14px; border: 1px solid var(--border, #d6c9a8); background: transparent; cursor: pointer; font: inherit; font-weight: 600; }
+.sud-lib-icon { font-size: 30px; }
+.sud-lesson-text { line-height: 1.5; }
+
+/* ---- Nonogram additions ---- */
+.sud-pad {
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  gap: 6px;
+  margin: 10px 0;
+}
+.sud-pad-btn {
+  appearance: none;
+  border: 1px solid #cbd5e1;
+  background: #eff6ff;
+  color: #1e40af;
+  border-radius: 10px;
+  font-size: 22px;
+  font-weight: 600;
+  padding: 10px 0;
+  cursor: pointer;
+}
+.sud-pad-btn:active { background: #bfdbfe; }
+.sud-pad-btn:disabled { opacity: 0.4; cursor: default; }
+.sud-board-svg text { user-select: none; pointer-events: none; }
+.sud-pulse-ring {
+  animation: sud-pulse 1.2s ease-in-out infinite;
+}
+@keyframes sud-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+.sud-lesson-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 8px;
+  text-align: left;
+}
+.sud-rank-name {
+  min-width: 90px;
+  font-weight: 600;
+}
+.sud-rank-row .sud-progress {
+  flex: 1;
+  min-width: 60px;
+  height: 10px;
+  background: #e2e8f0;
+  border-radius: 999px;
+  overflow: hidden;
+}
+.sud-rank-row .sud-progress-fill {
+  display: block;
+  height: 100%;
+  background: #2563eb;
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+.sud-floater {
+  position: absolute;
+  right: 14px;
+  top: 14px;
+  font-size: 34px;
+  animation: sud-float-up 2.6s ease-out forwards;
+  pointer-events: none;
+}
+@keyframes sud-float-up {
+  0% { transform: translateY(10px) scale(0.6); opacity: 0; }
+  15% { opacity: 1; transform: translateY(0) scale(1.15); }
+  100% { transform: translateY(-70px) scale(1); opacity: 0; }
+}
+.sud-board-fit { position: relative; }
+
+/* ---- Nonogram board fit: the SVG carries its own aspect (grid +
+   clue gutters), so the fit is width-driven with a viewport-height
+   cap that keeps the WHOLE board (gutters included) on screen. ---- */
+.no-board-fit {
+  height: auto;
+  aspect-ratio: auto;
+  width: min(100%, 600px, 72dvh);
+  margin-inline: auto;
+}
+.no-board {
+  width: 100%;
+  height: auto;
+  display: block;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+@keyframes no-flash-fade {
+  0% { opacity: 0.9; }
+  100% { opacity: 0; }
+}
+.no-flash {
+  animation: no-flash-fade 0.65s ease-out forwards;
+  pointer-events: none;
+}
+@keyframes no-target-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+.no-target-pulse {
+  animation: no-target-pulse 1.1s ease-in-out infinite;
+  pointer-events: none;
+}
+.no-pickers {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.no-mode-seg {
+  margin: 6px 0;
+}
