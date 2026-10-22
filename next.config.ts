@@ -3,6 +3,14 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   async redirects() {
     return [
+      // Any *.vercel.app host permanently redirects to the canonical
+      // host, preserving path + query (old links keep working).
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: ".*\\.vercel\\.app" }],
+        destination: "https://nonogram.synerworlds.com/:path*",
+        permanent: true,
+      },
       // The blog lives on the SynerWorlds hub — permanent (308) redirects,
       // mirroring cotuongup/checkers/caro. No Nonogram guide exists on the
       // hub yet, so every local blog URL lands on the Nonogram category
