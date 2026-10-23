@@ -53,6 +53,30 @@ export const viewport: Viewport = {
   themeColor: "#14100c",
 };
 
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "VideoGame",
+  name: "Nonogram",
+  url: SITE_URL,
+  applicationCategory: "Game",
+  gamePlatform: "Web browser",
+  operatingSystem: "Any (web browser)",
+  inLanguage: ["vi", "en"],
+  isAccessibleForFree: true,
+  genre: ["Puzzle", "Logic"],
+  playMode: ["SinglePlayer", "MultiPlayer"],
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "USD",
+  },
+  publisher: {
+    "@type": "Organization",
+    name: "SynerWorlds",
+    url: "https://synerworlds.com",
+  },
+};
+
 export default function RootLayout({
   children,
 }: {
@@ -61,6 +85,10 @@ export default function RootLayout({
   return (
     <html lang="vi">
       <body>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
         {GA_ID && (<>
           <Script src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`} strategy="afterInteractive" />
           <Script id="gtag-init" strategy="afterInteractive">{`
