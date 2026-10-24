@@ -13,7 +13,7 @@
 
 import { useEffect, useState } from "react";
 import HandoffLink from "./HandoffLink";
-import { STR } from "@/lib/nonogram/i18n";
+import { STR, type Lang } from "@/lib/nonogram/i18n";
 
 export type FooterGame = { vi: string; en: string; url: string };
 
@@ -78,11 +78,14 @@ export default function FooterGames({
   fallback,
   linkStyle,
 }: {
-  lang: "vi" | "en";
+  lang: Lang;
   fallback: FooterGame[];
   linkStyle?: React.CSSProperties;
 }) {
-  const en = lang === "en";
+  // Game names ship as vi/en proper-noun variants: VI readers get the
+  // Vietnamese names, every other locale gets the international (EN)
+  // variants.
+  const en = lang !== "vi";
   const s = STR[lang];
   const [games, setGames] = useState<FooterGame[]>(fallback);
   useEffect(() => {

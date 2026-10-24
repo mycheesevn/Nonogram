@@ -32,6 +32,9 @@ interface LibraryViewProps {
 
 export default function LibraryView({ lang, userId }: LibraryViewProps) {
   const s = STR[lang] as Record<string, string | string[]>;
+  // Lesson content ships vi/en only (lib/nonogram/lessons.ts): VI for
+  // Vietnamese, EN for every other locale (the family fallback).
+  const bl = lang === "vi" ? "vi" : "en";
 
   const [done, setDone] = useState<string[]>(() => loadLocalDone());
   const [activeIdx, setActiveIdx] = useState<number | null>(null);
@@ -120,15 +123,15 @@ export default function LibraryView({ lang, userId }: LibraryViewProps) {
               {String(s.bikipBack)}
             </button>
             <strong>
-              {lesson.icon} {lesson.title[lang]}
+              {lesson.icon} {lesson.title[bl]}
             </strong>
           </div>
-          {lesson.body[lang].split("\n\n").map((para, i) => (
+          {lesson.body[bl].split("\n\n").map((para, i) => (
             <p key={i} className="sud-note">
               {para}
             </p>
           ))}
-          <p className="sud-hint">{lesson.prompt[lang]}</p>
+          <p className="sud-hint">{lesson.prompt[bl]}</p>
           <div className="sud-seg no-mode-seg" role="group" aria-label="paint mode">
             <button
               type="button"
@@ -155,7 +158,7 @@ export default function LibraryView({ lang, userId }: LibraryViewProps) {
                   {String(s.bikipQuizCorrect)} {String(s.bikipComplete)}
                 </strong>
               </div>
-              <p className="sud-note">{lesson.explain[lang]}</p>
+              <p className="sud-note">{lesson.explain[bl]}</p>
               {activeIdx !== null && activeIdx + 1 < LESSONS.length && (
                 <div className="sud-panel-btns">
                   <button
@@ -192,7 +195,7 @@ export default function LibraryView({ lang, userId }: LibraryViewProps) {
               onClick={() => openLesson(i)}
             >
               <span>
-                {done.includes(l.id) ? "✅" : "⬜"} {l.icon} {l.title[lang]}
+                {done.includes(l.id) ? "✅" : "⬜"} {l.icon} {l.title[bl]}
               </span>
               <span>→</span>
             </button>

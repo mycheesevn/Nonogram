@@ -26,7 +26,9 @@ const LiveStreamModal = dynamic(
   () => import("./LiveStreamModal").then((m) => m.LiveStreamModal),
   { ssr: false }
 );
-import { STR, loadLang, saveLang, type Lang } from "@/lib/nonogram/i18n";
+import { STR, loadLang, resolvePreferredLang, saveLang, saveSharedLang, type Lang } from "@/lib/nonogram/i18n";
+import { LangPicker } from "./LangPicker";
+import { getAvailableLocales, getCountryMap, initCentralI18n, subscribeI18n } from "@/lib/nonogram/i18nCentral";
 import { isMuted, setMuted } from "@/lib/nonogram/sound";
 import { AuthProvider, useAuth } from "@/lib/supabase/auth";
 import { createClient } from "@/lib/supabase/client";
@@ -47,6 +49,31 @@ type Mode =
 
 function Shell() {
   const [lang, setLang] = useState<Lang>(() => loadLang());
+  // Central i18n (design §6): bundled dictionaries render the first
+  // paint; the loader syncs hub dictionaries in the background and bumps
+  // i18nTick when it applies them, so every STR[lang] read below
+  // re-resolves. The switcher's locale list comes from the hub manifest
+  // (bundled list until a manifest has been seen) — a new ready locale
+  // appears here with no game redeploy.
+  const [i18nTick, setI18nTick] = useState(0);
+  const [availableLocales, setAvailableLocales] = useState(getAvailableLocales);
+  useEffect(() => {
+    initCentralI18n();
+    return subscribeI18n(() => {
+      setI18nTick((t) => t + 1);
+      setAvailableLocales(getAvailableLocales());
+    });
+  }, []);
+  // Adopt the resolved preference once the central loader makes it
+  // renderable. Resolution order: this game's stored pick, then the
+  // shared sw-lang family cookie, then — only when neither holds a
+  // choice — browser-tag detection through the manifest's country
+  // table. Manual picks call saveLang, so this never fights a choice
+  // the player makes in this session.
+  useEffect(() => {
+    const next = resolvePreferredLang(availableLocales.map((l) => l.code), getCountryMap());
+    if (next && next !== lang) setLang(next);
+  }, [availableLocales, lang]);
   const [mode, setMode] = useState<Mode>("play");
   const [drawer, setDrawer] = useState(false);
   const [menu, setMenu] = useState(false);
@@ -144,6 +171,7 @@ function Shell() {
   const { user, profile, cgStats, displayName, signOut, sessionExpired, dismissSessionExpired } = useAuth();
   const [expiredMsg, setExpiredMsg] = useState<string | null>(null);
   const s = STR[lang] as Record<string, string | string[]>;
+  void i18nTick; // re-read STR after the central loader applies updates
   const userId = user?.id ?? null;
 
   /* Invite link ?room=CODE → open the rooms mode with the code prefilled. */
@@ -277,6 +305,9 @@ function Shell() {
   const pickLang = (l: Lang) => {
     setLang(l);
     saveLang(l);
+    // Mirror the explicit pick into the shared family cookie so it
+    // follows the player to every other migrated game.
+    saveSharedLang(l);
   };
   const pickMode = (m: Mode) => {
     setMode(m);
@@ -407,14 +438,11 @@ function Shell() {
   const actions = actionsRef.current;
   void actionsVersion; // re-read actionsRef after PlayView publishes its actions
 
-  /* Settings block shared by both identity menus (PacClone §5): language
-     segmented toggle + sound toggle (+ push settings when logged in). */
+  /* Settings block shared by both identity menus (PacClone §5): sound
+     toggle (+ push settings when logged in). Language lives in the
+     header 🌐 LangPicker since the central-i18n migration. */
   const renderSettings = (includePush: boolean) => (
     <div className="sud-account-menu-settings">
-      <div className="sud-seg" role="group" aria-label={String(s.language)}>
-        <button type="button" className={lang === "vi" ? "active" : ""} onClick={() => pickLang("vi")}>Tiếng Việt</button>
-        <button type="button" className={lang === "en" ? "active" : ""} onClick={() => pickLang("en")}>English</button>
-      </div>
       <button type="button" className="sud-btn" onClick={toggleMute}>
         {muted ? "🔇" : "🔊"} {String(s.sound)}
       </button>
@@ -428,11 +456,24 @@ function Shell() {
         <div className="sud-topbar">
           <button className="sud-menu-btn" aria-label="Menu" onClick={() => setDrawer(true)}>☰</button>
           <div className="sud-brand">
+            {/* Mobile header rule (owner, 2026-10-24): on small screens
+                the brand collapses to the game's icon so the top row —
+                icon + 🌐 picker + account — never wraps; the full name
+                stays on desktop. */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img className="sud-brand-icon" src="/icon.svg" alt="" aria-hidden="true" width={30} height={30} />
             <h1 className="sud-title">{String(s.appName)}</h1>
             <span className="no-muted">{String(s.tagline)}</span>
           </div>
           <div className="sud-account">
             <div className="sud-user" role="group" aria-label="Account">
+            <LangPicker
+              lang={lang}
+              locales={availableLocales}
+              label={String(s.language)}
+              closeLabel={String(s.close)}
+              onPick={(code) => pickLang(code as Lang)}
+            />
             {user && (
               <button className="sud-rating-chip" onClick={() => pickMode("leaderboard")} title={String(s.leaderboard)}>
                 ⭐ {cgStats?.rating ?? 800}

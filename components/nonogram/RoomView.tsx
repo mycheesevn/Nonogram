@@ -393,7 +393,9 @@ function RoomDetail({
   onBack: () => void;
 }) {
   const s = STR[lang] as Record<string, string | string[]>;
-  const t = L[lang];
+  // L ships vi/en only: VI for Vietnamese, EN for every other locale
+  // (the family fallback).
+  const t = L[lang === "vi" ? "vi" : "en"];
   const [room, setRoom] = useState<Room | null>(null);
   const [members, setMembers] = useState<RoomMember[]>([]);
   const [activeMatch, setActiveMatch] = useState<RoomMatch | null>(null);

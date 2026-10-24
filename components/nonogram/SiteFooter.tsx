@@ -8,7 +8,7 @@
  */
 
 import FooterGames from "./FooterGames";
-import { STR } from "@/lib/nonogram/i18n";
+import { STR, type Lang } from "@/lib/nonogram/i18n";
 import HandoffLink from "./HandoffLink";
 
 const GAMES: Array<{ vi: string; en: string; url: string }> = [
@@ -47,12 +47,11 @@ export default function SiteFooter({
   lang,
   className,
 }: {
-  lang: "vi" | "en";
+  lang: Lang;
   className: string;
 }) {
-  const en = lang === "en";
   const s = STR[lang];
-  const q = en ? "?lang=en" : "";
+  const q = lang === "vi" ? "" : `?lang=${lang}`;
   const linkStyle = { color: "inherit" } as const;
   return (
     <footer
