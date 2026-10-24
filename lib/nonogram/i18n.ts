@@ -1,6 +1,9 @@
-/** VI/EN strings. VI is the default. Persisted in localStorage `no-lang`. */
+/** Bundled VI/EN strings. VI is the default. Persisted in localStorage
+ *  `no-lang`. The hub's central store (design §4–§6) can add further
+ *  locales at runtime — the loader materialises them into STR — so a
+ *  locale is just its manifest code, not a closed union. */
 
-export type Lang = "vi" | "en";
+export type Lang = string;
 
 const vi = {
   appName: "Nonogram",
@@ -1370,13 +1373,24 @@ export const STR: Record<Lang, Record<StrKey, string | string[]>> = { vi, en };
 
 const KEY = "no-lang";
 
-export function loadLang(): Lang {
+/** The player's stored locale preference, verbatim ("" when unset). It
+ *  may name a locale this build cannot render yet — the central loader
+ *  makes it renderable once the hub manifest marks it ready. */
+export function loadLangPreference(): string {
   try {
-    const v = localStorage.getItem(KEY);
-    return v === "en" ? "en" : "vi";
+    return localStorage.getItem(KEY) ?? "";
   } catch {
-    return "vi";
+    return "";
   }
+}
+
+/** Locale safe to render with RIGHT NOW: the stored preference when STR
+ *  already carries it (bundled, or materialised by the central loader),
+ *  else the VI default. AppShell re-adopts the raw preference once the
+ *  loader publishes it as available. */
+export function loadLang(): Lang {
+  const pref = loadLangPreference();
+  return pref && pref in STR ? pref : "vi";
 }
 
 export function saveLang(l: Lang): void {
@@ -1384,6 +1398,119 @@ export function saveLang(l: Lang): void {
     localStorage.setItem(KEY, l);
   } catch {
     /* ignore */
+  }
+}
+
+/* ---- shared family preference + first-visit detection ----
+ * An explicit pick in ANY migrated game is mirrored into the `sw-lang`
+ * cookie on the shared parent domain, so the player's choice follows
+ * them across the whole family (the same .synerworlds.com cookie
+ * pattern the shared sign-in uses). Each game keeps its own pick,
+ * which wins locally. */
+
+const SHARED_KEY = "sw-lang";
+
+/** The family-wide shared preference from the `sw-lang` cookie
+ *  ("" when unset). Client-only; safe to call during first paint. */
+export function loadSharedLang(): string {
+  try {
+    const m = document.cookie.match(new RegExp(`(?:^|; )${SHARED_KEY}=([^;]*)`));
+    return m ? decodeURIComponent(m[1]) : "";
+  } catch {
+    return "";
+  }
+}
+
+/** Mirror an explicit pick into the shared cookie: Domain=.synerworlds.com
+ *  on the family's own hosts (a host-only cookie elsewhere, where the
+ *  parent-domain attribute would be rejected anyway), Path=/, 1 year,
+ *  SameSite=Lax. */
+export function saveSharedLang(l: Lang): void {
+  try {
+    const host = location.hostname;
+    const onFamily = host === "synerworlds.com" || host.endsWith(".synerworlds.com");
+    const domain = onFamily ? "; Domain=.synerworlds.com" : "";
+    document.cookie = `${SHARED_KEY}=${encodeURIComponent(l)}; Path=/; Max-Age=31536000; SameSite=Lax${domain}`;
+  } catch {
+    /* ignore */
+  }
+}
+
+export interface CountryMapData {
+  default: string;
+  map: Record<string, string>;
+}
+
+/** Bundled fallback for the country→locale table — EXACTLY today's
+ *  family rules (VN→vi, LA→lo, TH→th, KH→km, francophone→fr, everything
+ *  else → the default en). The AUTHORITATIVE table is store data: the
+ *  hub manifest's `countryMap` (content/i18n/countries.json), loaded by
+ *  i18nCentral and passed into resolvePreferredLang by AppShell. When
+ *  the hub adds a locale (ja/ko/es) the manifest table grows and this
+ *  fallback simply stays what it is — no code change anywhere. */
+export const BUNDLED_COUNTRY_MAP: CountryMapData = {
+  default: "en",
+  map: {
+    VN: "vi", LA: "lo", TH: "th", KH: "km",
+    FR: "fr", MC: "fr", SN: "fr", CI: "fr", ML: "fr", BF: "fr", NE: "fr",
+    GN: "fr", BJ: "fr", TG: "fr", CM: "fr", CD: "fr", CG: "fr", GA: "fr",
+    TD: "fr", DJ: "fr", MG: "fr", MU: "fr", SC: "fr", KM: "fr", VU: "fr",
+    NC: "fr", PF: "fr", WF: "fr", GF: "fr", GP: "fr", MQ: "fr", RE: "fr",
+    YT: "fr", BL: "fr", MF: "fr", PM: "fr", HT: "fr", LU: "fr",
+  },
+};
+
+/** Match browser language tags against the available locale codes:
+ *  exact code first, then primary subtag (fr-CA -> fr), then the tag's
+ *  REGION through the country→locale table (a browser set to a language
+ *  the store doesn't offer yet still lands on its country's locale
+ *  once the store offers it — e.g. ja-JP -> ja after the hub adds ja).
+ *  Returns the matched available code, or null. */
+export function matchBrowserLang(
+  tags: readonly string[],
+  available: readonly string[],
+  countryMap?: CountryMapData | null
+): string | null {
+  const cm = countryMap ?? BUNDLED_COUNTRY_MAP;
+  const codes = available.map((c) => c.toLowerCase());
+  for (const raw of tags) {
+    const tag = raw.toLowerCase();
+    const exact = codes.indexOf(tag);
+    if (exact >= 0) return available[exact];
+    const parts = tag.split("-");
+    const primary = codes.indexOf(parts[0]);
+    if (primary >= 0) return available[primary];
+    if (parts[1]) {
+      const mapped = cm.map[parts[1].toUpperCase()];
+      if (mapped) {
+        const idx = codes.indexOf(mapped.toLowerCase());
+        if (idx >= 0) return available[idx];
+      }
+    }
+  }
+  return null;
+}
+
+/** Preference resolution over the locales renderable RIGHT NOW: the
+ *  game's own stored pick first, then the shared family cookie, then —
+ *  only when neither store holds any choice at all — detection from the
+ *  browser's language tags + the country table. Returns null to keep
+ *  the current (VI-default) rendering; an explicit choice is never
+ *  overridden, and a stored choice for a locale that is not renderable
+ *  yet simply waits for the loader. */
+export function resolvePreferredLang(
+  available: readonly string[],
+  countryMap?: CountryMapData | null
+): string | null {
+  const own = loadLangPreference();
+  if (own) return available.includes(own) ? own : null;
+  const shared = loadSharedLang();
+  if (shared) return available.includes(shared) ? shared : null;
+  try {
+    const tags = navigator.languages?.length ? navigator.languages : [navigator.language];
+    return matchBrowserLang(tags.filter(Boolean), available, countryMap);
+  } catch {
+    return null;
   }
 }
 
