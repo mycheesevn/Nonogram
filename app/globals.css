@@ -2293,3 +2293,174 @@ button.sud-log-row { cursor: pointer; }
 .no-mode-seg {
   margin: 6px 0;
 }
+
+/* ---------- language picker (header 🌐 button + popover/sheet) ---------- */
+   cascade order beats media queries — the mobile override must come
+.sud-lang-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 38px;
+  padding: 0 10px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--ink);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.sud-lang-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+}
+
+.sud-lang-pop {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 95;
+  width: 300px;
+  max-width: calc(100vw - 16px);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 10px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sud-lang-pop-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.sud-lang-close {
+  background: none;
+  border: 0;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.95rem;
+  cursor: pointer;
+  padding: 2px 6px;
+}
+
+.sud-lang-search {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel-2);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.9rem;
+}
+
+.sud-lang-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.sud-lang-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.92rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sud-lang-item:hover { background: var(--panel-2); }
+.sud-lang-item.active { background: var(--panel-2); font-weight: 700; }
+
+.sud-lang-tag {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+
+.sud-lang-item.active .sud-lang-tag { color: var(--accent); }
+
+.sud-lang-empty {
+  padding: 10px;
+  color: var(--muted);
+  text-align: center;
+}
+
+@media (max-width: 920px) {
+  /* Language picker becomes a bottom sheet on mobile. */
+  .sud-lang-pop {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: auto;
+    width: auto;
+    max-width: none;
+    border-radius: 16px 16px 0 0;
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
+    max-height: 72dvh;
+  }
+
+  .sud-lang-list {
+    max-height: none;
+    flex: 1;
+    min-height: 0;
+  }
+}
+
+/* ---------- mobile header: icon brand (owner rule, 2026-10-24) ---------- */
+.sud-brand-icon {
+  display: none;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 920px) {
+  .sud-topbar {
+    flex-wrap: nowrap;
+  }
+
+  .sud-brand {
+    align-items: center;
+  }
+
+  .sud-brand-icon {
+    display: block;
+    width: 30px;
+    height: 30px;
+    align-self: center;
+  }
+
+  .sud-brand .sud-title {
+    display: none;
+  }
+
+  /* The brand tagline span carries the legacy .no-muted class (the
+     base 920px block hides .sud-muted); hide it on mobile too so the
+     single row stays icon-only. */
+  .sud-brand .no-muted {
+    display: none;
+  }
+}
