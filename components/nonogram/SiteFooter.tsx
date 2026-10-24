@@ -8,6 +8,7 @@
  */
 
 import FooterGames from "./FooterGames";
+import { STR } from "@/lib/nonogram/i18n";
 import HandoffLink from "./HandoffLink";
 
 const GAMES: Array<{ vi: string; en: string; url: string }> = [
@@ -50,6 +51,7 @@ export default function SiteFooter({
   className: string;
 }) {
   const en = lang === "en";
+  const s = STR[lang];
   const q = en ? "?lang=en" : "";
   const linkStyle = { color: "inherit" } as const;
   return (
@@ -66,9 +68,7 @@ export default function SiteFooter({
     >
       <div style={{ fontWeight: 600 }}>
         <HandoffLink href={HUB} newTab style={linkStyle}>
-          {en
-            ? "SynerWorlds - One account, every world."
-            : "SynerWorlds - Một tài khoản, mọi bàn cờ."}
+          {String(s.footerBrand)}
         </HandoffLink>
       </div>
       <div>
@@ -76,24 +76,22 @@ export default function SiteFooter({
       </div>
       <div>
         <HandoffLink href={`${HUB}/terms${q}`} newTab style={linkStyle}>
-          {en ? "Terms of Service" : "Điều khoản dịch vụ"}
+          {String(s.footerTerms)}
         </HandoffLink>
         {" · "}
         <HandoffLink href={`${HUB}/privacy${q}`} newTab style={linkStyle}>
-          {en ? "Privacy Policy" : "Chính sách bảo mật"}
+          {String(s.footerPrivacy)}
         </HandoffLink>
         {" · "}
         <HandoffLink href={`${HUB}/contact${q}`} newTab style={linkStyle}>
-          {en ? "Contact" : "Liên hệ"}
+          {String(s.footerContact)}
         </HandoffLink>
         {" · "}
         <HandoffLink href={`${HUB}/blog${q}`} newTab style={linkStyle}>
           Blog
         </HandoffLink>
         {" · "}
-        {en
-          ? "© SynerWork Inc. All rights reserved."
-          : "© SynerWork Inc. Bảo lưu mọi quyền."}
+        {String(s.footerRights)}
       </div>
     </footer>
   );

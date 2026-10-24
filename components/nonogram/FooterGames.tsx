@@ -13,6 +13,7 @@
 
 import { useEffect, useState } from "react";
 import HandoffLink from "./HandoffLink";
+import { STR } from "@/lib/nonogram/i18n";
 
 export type FooterGame = { vi: string; en: string; url: string };
 
@@ -82,6 +83,7 @@ export default function FooterGames({
   linkStyle?: React.CSSProperties;
 }) {
   const en = lang === "en";
+  const s = STR[lang];
   const [games, setGames] = useState<FooterGame[]>(fallback);
   useEffect(() => {
     let live = true;
@@ -104,7 +106,7 @@ export default function FooterGames({
       ))}
       {", "}
       <HandoffLink href={ALL_URL} newTab style={linkStyle}>
-        {en ? "All games" : "Tất cả trò chơi"}
+        {String(s.footerAllGames)}
       </HandoffLink>
     </>
   );
